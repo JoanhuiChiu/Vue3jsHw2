@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vue3Wk2Task</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    />
+  </head>
+
+  <body>
+    <div id="app">
+      <!-- 登入成功:取得token -->
+      <div v-if="products.length>0" class="container">
+        <div class="row py-3">
+          <div class="col-md-6">
+            <h2>產品列表</h2>
+            <table class="table table-hover mt-4">
+              <thead>
+                <tr>
+                  <th width="150">產品名稱</th>
+                  <th width="120">原價</th>
+                  <th width="120">售價</th>
+                  <th width="150">是否啟用</th>
+                  <th width="120">查看細節</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in products" :key="item.id">
+                  <td width="150">{{ item.title }}</td>
+                  <td width="120">{{ item.origin_price }}</td>
+                  <td width="120">{{ item.price }}</td>
+                  <td width="150">
+                    <span :class="item.is_enabled ? 'text-success' : 'text-danger'">{{ item.is_enabled ? "啟用" : "未啟用" }}</span>
+                  </td>
+                  <td width="120">
+                    <button
+                      type="button"
+                      class="btn btn-primary"
+                      @click="currentProduct = item"
+                    >
+                      查看細節
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p>目前有 <span>{{ products.length }}</span> 項產品</p>
+          </div>
+          <div class="col-md-6">
+            <h2>單一產品細節</h2>
+            <template v-if="currentProduct.title">
+              <div class="card mb-3">
+                <img :src="currentProduct.imageUrl" class="card-img-top primary-image" alt=""
+                />
+                <div class="card-body">
+                  <h5 class="card-title">
+                    {{ currentProduct.title }}
+                    <span class="badge bg-primary ms-2"
+                      >{{ currentProduct.category }}</span
+                    >
+                  </h5>
+                  <p class="card-text">
+                    商品描述：{{ currentProduct.description }}
+                  </p>
+                  <p class="card-text">
+                    商品內容：{{ currentProduct.content }}
+                  </p>
+                  <div class="d-flex">
+                    <p class="card-text me-2">{{ currentProduct.price }}</p>
+                    <p class="card-text text-secondary">
+                      <del>{{ currentProduct.origin_price }}</del>
+                    </p>
+                    元 / 個
+                  </div>
+                </div>
+              </div>
+              <template
+                v-for="(image, index) in currentProduct.imagesUrl"
+                :key="index"
+              >
+                <img :src="image" alt="" class="images m-2" />
+              </template>
+            </template>
+            <p class="text-secondary" v-else>請選擇一個商品查看</p>
+          </div>
+        </div>
+      </div>
+      <!-- 尚未登入前 -->
+      <div v-else class="container">
+        <div class="row justify-content-center">
+          <h1 class="h3 mb-3 font-weight-normal">請先登入</h1>
+          <div class="col-8">
+            <form id="form" class="form-signin">
+              <div class="form-floating mb-3">
+                <input
+                  v-model="username"
+                  type="email"
+                  class="form-control"
+                  id="username"
+                  placeholder="name@example.com"
+                  required
+                  autofocus
+                />
+                <label for="username">Email address</label>
+              </div>
+              <div class="form-floating">
+                <input
+                  v-model="password"
+                  type="password"
+                  class="form-control"
+                  id="password"
+                  placeholder="Password"
+                  required
+                />
+                <label for="password">Password</label>
+              </div>
+              <button
+                @click.prevent="login"
+                class="btn btn-lg btn-primary w-100 mt-3"
+                type="submit"
+              >
+                登入
+              </button>
+             
+            </form>
+          </div>
+        </div>
+      </div>
+      <p class="mt-5 mb-3 text-muted">&copy; 2021~∞ - 六角學院</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.9.1/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.min.js"></script>
+    
+    <script type="module">
+      const { createApp } = Vue;
+      const api_url = `https://ec-course-api.hexschool.io`;
+      const api_path = "joanhui";
+      
+      createApp({
+        data() {
+          return {
+            message: "",
+            uid: "",
+            token: "",
+            username: "",
+            password: "",
+            products: [],
+            currentProduct: {},
+          };
+        },
+        methods: {
+          login() {
+            const userInfo = {
+              username: username.value,
+              password: password.value,
+            };
+            console.log(userInfo);
+            axios
+              .post(`${api_url}/v2/admin/signin`, userInfo)
+              .then((res) => {
+                console.log(res);
+                //login成功
+                const { message, uid, token } = res.data;
+                console.log("myUID="+uid);
+                this.checkLogin(token);
+              })
+              .catch((err) => {
+                //login失敗
+                this.message = "login失敗";
+                this.token = "";
+                console.log(err);
+              });
+          },
+          //確認使用者是否登入成功
+          checkLogin(mytoken) {
+            axios.defaults.headers.common["authorization"] = mytoken;
+            axios
+              .post(`${api_url}/v2/api/user/check`)
+              .then((res) => {
+                this.getAllProducts();
+              })
+              .catch((err) => {
+                console.log(err);
+              });
+          },
+          //取得所有產品列表
+          getAllProducts() {
+            axios.get(`${api_url}/v2/api/${api_path}/products/all`)
+              .then((res) => {
+                this.products = res.data.products;
+                console.log(this.products);
+              })
+              .catch((err) => {
+                console.log(err);
+              });
+          },
+        },
+      }).mount("#app");
+
+    </script>
+  </body>
+</html>
